@@ -1,0 +1,9 @@
+baseURL = "/"
+languageCode = "zh-cn"
+title = "DouJiao"
+
+[outputs]
+  home = ["HTML"]
+
+[markup.goldmark.renderer]
+  unsafe = true

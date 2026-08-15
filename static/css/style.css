@@ -1,0 +1,63 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f5f5f5; color: #333; padding: 20px; max-width: 1200px; margin: 0 auto; }
+header { text-align: center; padding: 30px 0 20px; }
+header h1 { font-size: 2em; margin-bottom: 8px; }
+header p { color: #666; }
+
+/* 搜索框 */
+.search-box { margin: 20px 0; }
+.search-box input {
+  width: 100%; padding: 12px 16px; font-size: 16px;
+  border: 2px solid #ddd; border-radius: 8px; outline: none; transition: border-color .2s;
+}
+.search-box input:focus { border-color: #4a90d9; }
+
+/* 分类筛选栏 */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.filter-btn {
+  padding: 6px 14px; border: 1px solid #ddd; border-radius: 20px;
+  background: #fff; cursor: pointer; font-size: 14px; transition: all .2s; white-space: nowrap;
+}
+.filter-btn:hover { border-color: #4a90d9; color: #4a90d9; }
+.filter-btn.active { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+
+/* 资源网格 */
+.resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.resource-card {
+  background: #fff; border-radius: 10px; padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .2s;
+}
+.resource-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.card-title { font-size: 16px; margin-bottom: 10px; line-height: 1.4; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tag { font-size: 12px; padding: 2px 8px; background: #eef4fb; color: #4a90d9; border-radius: 4px; }
+.card-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.link-btn {
+  display: inline-block; padding: 6px 14px; border-radius: 6px;
+  font-size: 13px; text-decoration: none; color: #fff; transition: opacity .2s;
+}
+.link-btn:hover { opacity: .85; }
+.link-百度 { background: #2b7de9; }
+.link-夸克 { background: #ff6a00; }
+.link-UC { background: #e65100; }
+.link-迅雷 { background: #0078d4; }
+.link-阿里 { background: #ff6f00; }
+
+/* 无结果 */
+.no-results { text-align: center; padding: 60px 0; font-size: 18px; color: #999; }
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  body { padding: 12px; }
+  header h1 { font-size: 1.5em; }
+  .resource-grid { grid-template-columns: 1fr; }
+}
+
+/* 分类折叠 */
+.filter-wrapper { position: relative; margin-bottom: 20px; }
+.toggle-btn {
+  display: block; margin: 8px auto 0; padding: 4px 16px;
+  border: none; background: none; color: #4a90d9; cursor: pointer;
+  font-size: 13px; transition: color .2s;
+}
+.toggle-btn:hover { color: #2a6cb8; text-decoration: underline; }

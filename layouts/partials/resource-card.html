@@ -1,0 +1,17 @@
+<div class="resource-card"
+     data-title="{{ .title }}"
+     data-categories='{{ .categories | jsonify }}'>
+  <h3 class="card-title">{{ .title }}</h3>
+  <div class="card-tags">
+    {{ range .categories }}
+      <span class="tag">{{ . }}</span>
+    {{ end }}
+  </div>
+  <div class="card-links">
+    {{ range .links }}
+      <a href="{{ .url }}" target="_blank" rel="noopener" class="link-btn link-{{ .platform }}">
+        {{ .platform }}
+      </a>
+    {{ end }}
+  </div>
+</div>

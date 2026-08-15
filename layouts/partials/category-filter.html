@@ -1,0 +1,19 @@
+{{ $allCats := slice }}
+{{ range site.Data.resources }}
+  {{ range .categories }}
+    {{ $allCats = $allCats | append . }}
+  {{ end }}
+{{ end }}
+{{ $uniqueCats := uniq $allCats | sort }}
+
+<div class="filter-wrapper">
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-category="全部">全部</button>
+    {{ range $index, $cat := $uniqueCats }}
+      <button class="filter-btn" data-category="{{ $cat }}" data-index="{{ $index }}">{{ $cat }}</button>
+    {{ end }}
+  </div>
+  {{ if gt (len $uniqueCats) 8 }}
+    <button class="toggle-btn" id="toggleFilter">展开全部 ▼</button>
+  {{ end }}
+</div>

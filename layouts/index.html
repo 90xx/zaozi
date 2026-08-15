@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ .Site.Title }}</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>{{ .Site.Title }}</h1>
+    <p>{{ .Site.Params.description }}</p>
+  </header>
+
+  <main>
+    <!-- 分类筛选器 -->
+    {{ partial "category-filter.html" . }}
+
+    <!-- 搜索框 -->
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="搜索资源名称...">
+    </div>
+
+    <!-- 资源列表 -->
+    <div id="resourceList" class="resource-grid">
+      {{ $resources := site.Data.resources }}
+      {{ range $resources }}
+        {{ partial "resource-card.html" . }}
+      {{ end }}
+    </div>
+
+    <!-- 无结果提示 -->
+    <div id="noResults" class="no-results" style="display:none;">
+      😕 没有找到匹配的资源
+    </div>
+  </main>
+
+  <!-- 将数据注入 JS 供前端筛选使用 -->
+  <script>
+    const RESOURCES = {{ site.Data.resources | jsonify }};
+  </script>
+  <script src="/js/filter.js"></script>
+</body>
+</html>
