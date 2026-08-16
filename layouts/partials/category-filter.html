@@ -1,7 +1,18 @@
+{{/* 安全地收集并合并 data/resources/ 下所有 json 分片 */}}
+{{ $allResources := slice }}
+{{ range $key, $val := hugo.Data.resources }}
+  {{ if reflect.IsSlice $val }}
+    {{ $allResources = $allResources | append $val }}
+  {{ end }}
+{{ end }}
+
+{{/* 从合并后的资源中提取所有分类 */}}
 {{ $allCats := slice }}
-{{ range site.Data.resources }}
-  {{ range .categories }}
-    {{ $allCats = $allCats | append . }}
+{{ range $allResources }}
+  {{ with .categories }}
+    {{ range . }}
+      {{ $allCats = $allCats | append . }}
+    {{ end }}
   {{ end }}
 {{ end }}
 {{ $uniqueCats := uniq $allCats | sort }}

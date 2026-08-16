@@ -23,8 +23,13 @@
 
     <!-- 资源列表 -->
     <div id="resourceList" class="resource-grid">
-      {{ $resources := site.Data.resources }}
-      {{ range $resources }}
+      {{/* 自动收集 data/resources/ 下所有 json 并合并为一个数组 */}}
+      {{ $allResources := slice }}
+      {{ range $key, $val := hugo.Data.resources }}
+        {{ $allResources = $allResources | append $val }}
+      {{ end }}
+
+      {{ range $allResources }}
         {{ partial "resource-card.html" . }}
       {{ end }}
     </div>
@@ -35,9 +40,13 @@
     </div>
   </main>
 
-  <!-- 将数据注入 JS 供前端筛选使用 -->
+  <!-- 将合并后的完整数据注入 JS 供前端筛选使用 -->
   <script>
-    const RESOURCES = {{ site.Data.resources | jsonify }};
+    {{ $allResources := slice }}
+    {{ range $key, $val := hugo.Data.resources }}
+      {{ $allResources = $allResources | append $val }}
+    {{ end }}
+    const RESOURCES = {{ $allResources | jsonify }};
   </script>
   <script src="/js/filter.js"></script>
 </body>
