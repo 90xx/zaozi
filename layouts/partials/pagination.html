@@ -1,0 +1,59 @@
+{{ if gt (len (where .Site.RegularPages "Type" "ne" "")) 0 }}
+{{ end }}
+<style>
+  .js-pagination { display:flex; justify-content:center; align-items:center; gap:6px; margin:40px 0; flex-wrap:wrap; }
+  .js-pagination button { min-width:36px; height:36px; padding:0 10px; border-radius:4px; font-size:14px; border:1px solid #ddd; color:#555; background:#fff; cursor:pointer; transition:all .2s; }
+  .js-pagination button:hover { background:#f5f5f5; border-color:#ccc; }
+  .js-pagination button.active { background:#007bff; border-color:#007bff; color:#fff; cursor:default; }
+  .js-pagination button:disabled { color:#aaa; border-color:#eee; background:#fafafa; cursor:default; }
+</style>
+<nav class="js-pagination" id="jsPagination"></nav>
+<script>
+(function() {
+  const PER_PAGE = 10; // 每页显示数量，按需修改
+  const list = document.getElementById('resourceList');
+  const cards = list ? Array.from(list.children) : [];
+  const pag = document.getElementById('jsPagination');
+  if (cards.length <= PER_PAGE || !pag) return;
+
+  let current = 1;
+  const total = Math.ceil(cards.length / PER_PAGE);
+
+  function render() {
+    cards.forEach((c, i) => {
+      c.style.display = (i >= (current-1)*PER_PAGE && i < current*PER_PAGE) ? '' : 'none';
+    });
+    pag.innerHTML = '';
+
+    const prev = document.createElement('button');
+    prev.textContent = '<<';
+    prev.disabled = current === 1;
+    prev.onclick = () => { current--; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+    pag.appendChild(prev);
+
+    for (let i = 1; i <= total; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      if (i === current) btn.className = 'active';
+      btn.onclick = () => { current = i; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+      pag.appendChild(btn);
+    }
+
+    const next = document.createElement('button');
+    next.textContent = '>>';
+    next.disabled = current === total;
+    next.onclick = () => { current++; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+    pag.appendChild(next);
+  }
+
+  render();
+
+  // 搜索时重置到第1页
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      setTimeout(() => { current = 1; render(); }, 50);
+    });
+  }
+})();
+</script>

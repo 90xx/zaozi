@@ -1,6 +1,7 @@
 baseURL = "/"
 languageCode = "zh-cn"
 title = "DouJiao"
+paginate = 10
 
 [outputs]
   home = ["HTML"]
