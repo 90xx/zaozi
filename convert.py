@@ -4,7 +4,7 @@ import openpyxl
 from pathlib import Path
 
 # ====== 配置区 ======
-EXCEL_FILE = "zaozi2.xlsx"
+EXCEL_FILE = "zaozi.xlsx"
 OUTPUT_JSON = "data/resources.json"
 SHEET_NAME = 0
 # ====================

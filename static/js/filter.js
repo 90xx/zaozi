@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleBtn = document.getElementById('toggleFilter');
   if (toggleBtn) {
     const allFilterBtns = document.querySelectorAll('#filterBar .filter-btn');
-    const SHOW_COUNT = 9;
+    const SHOW_COUNT = 5;
     let expanded = false;
 
     // SVG 图标常量
