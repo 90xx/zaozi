@@ -64,5 +64,6 @@
   console.log('[Hugo] 注入资源总数:', {{ len $allResources }});
 </script>
   <script src="/js/filter.js"></script>
+{{ partial "verify-gate.html" . }}
 </body>
 </html>

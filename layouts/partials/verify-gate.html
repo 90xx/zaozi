@@ -1,131 +1,241 @@
 <!-- layouts/partials/verify-gate.html -->
+<!-- 🛡️ Zaozi 项目访问验证模块 -->
 <style>
-  /* 强制模态框样式，防止被覆盖 */
+  /* 强制模态框样式 */
   #accessModal {
-    display: none; /* 默认隐藏，由JS控制显示 */
+    display: none;
     position: fixed !important;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6);
-    z-index: 99999; /* 提高层级 */
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 99999;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
-  
-  /* 遮罩层样式 */
-  .verify-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(255,255,255,0.1); 
-    z-index: 40;
-    pointer-events: none; /* 允许点击穿透，主要靠JS禁用下方元素 */
+
+  #accessModal .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 400px;
+    width: calc(100% - 2rem);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalIn 0.3s ease;
+  }
+
+  @keyframes modalIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  #accessModal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  #accessModal .get-code-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.75rem;
+    background: #3b82f6;
+    color: #fff;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background 0.2s;
+    margin-bottom: 1.5rem;
+  }
+  #accessModal .get-code-btn:hover { background: #2563eb; }
+
+  #accessModal label {
+    display: block;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  #accessModal input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  #accessModal input:focus { border-color: #3b82f6; }
+  #accessModal input.input-error { border-color: #ef4444; }
+
+  #accessModal .verify-btn {
+    width: 100%;
+    padding: 0.85rem;
+    background: #22c55e;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background 0.2s;
+  }
+  #accessModal .verify-btn:hover { background: #16a34a; }
+
+  #accessModal .error-msg {
+    color: #ef4444;
+    font-size: 0.875rem;
+    text-align: center;
+    margin-top: 1rem;
+    font-weight: 600;
+    display: none;
+  }
+  #accessModal .error-msg.show { display: block; }
+
+  /* 全屏拦截遮罩（透明，仅拦截点击） */
+  #verifyBlockOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 99998;
+    background: transparent;
   }
 </style>
 
 <!-- 访问码模态框 -->
 <div id="accessModal">
-  <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4 relative z-50">
-    <!-- 获取链接按钮 -->
-    <a id="accessLink" href="#" target="_blank" rel="noopener noreferrer"
-       class="w-full block text-center py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition mb-6 flex items-center justify-center font-bold cursor-pointer no-underline">
-      <span class="mr-2">👉</span> 点击获取 <span id="linkDate"></span> 访问码
+  <div class="modal-box">
+    <div class="modal-title">🔒 请输入访问码继续</div>
+
+    <a id="accessLink" href="#" target="_blank" rel="noopener noreferrer" class="get-code-btn">
+      <span style="margin-right: 0.5rem;">👉</span>
+      点击获取 <span id="linkDate" style="margin-left: 0.25rem;"></span> 访问码
     </a>
-    
-    <div class="mb-4">
-      <label class="block text-gray-700 text-sm mb-2 font-bold">请输入访问码：</label>
-      <input id="accessCodeInput" type="text" placeholder="例如: work" maxlength="15" autocomplete="off"
-             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"/>
-    </div>
-    
-    <button id="verifyBtn" class="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition font-bold text-lg shadow-md cursor-pointer">
-      验证访问码
-    </button>
-    
-    <p id="errorText" class="text-red-500 text-sm mt-4 text-center hidden font-bold"></p>
+
+    <label for="accessCodeInput">请输入访问码：</label>
+    <input id="accessCodeInput" type="text" placeholder="请输入访问码" maxlength="15" autocomplete="off" />
+
+    <button id="verifyBtn" class="verify-btn">✅ 验证访问码</button>
+
+    <div id="errorText" class="error-msg"></div>
   </div>
 </div>
 
 <script>
-(function() {
-  // === 1. 配置区域 (请确保这里填入了真实数据) ===
+(function () {
+  'use strict';
+
+  // ═══════════════════════════════════════════
+  // 1. 访问码配置 (日期 → { code, link })
+  // ═══════════════════════════════════════════
   const ACCESS_MAP = {
-    // 示例数据，请替换为你真实的 map
-    '2024-05-20': { code: '520', link: 'https://pan.quark.cn/s/xxxx' },
-    '2026-08-15': { link: 'https://pan.quark.cn/s/761ac136fa21', code: 'w51t' },
-  '2026-08-27': { link: 'https://pan.quark.cn/s/d15951b81464', code: 'y94k' },
-  '2026-08-28': { link: 'https://pan.quark.cn/s/757511119b42', code: '47wo' },
-  '2026-08-29': { link: 'https://pan.quark.cn/s/a1602b0e53ca', code: '53jn' },
-  '2026-08-30': { link: 'https://pan.quark.cn/s/0a7a8c1c201f', code: 'zv0h' },
-  '2026-08-31': { link: 'https://pan.quark.cn/s/2fb6198a1d1d', code: '9wjd' },
-  '2026-09-01': { link: 'https://pan.quark.cn/s/942e21ab9d6b', code: '28rs' },
-  '2026-09-02': { link: 'https://pan.quark.cn/s/fe42a2997ed2', code: '4p1w' },
-  '2026-09-03': { link: 'https://pan.quark.cn/s/6122150ada3f', code: 'wa5n' },
-  '2026-09-04': { link: 'https://pan.quark.cn/s/370735b8ce61', code: 'hl22' },
-  '2026-09-05': { link: 'https://pan.quark.cn/s/530e2cbbabcb', code: '141t' },
-  '2026-09-06': { link: 'https://pan.quark.cn/s/8f3d7a0a7890', code: 'dnsu' },
-  '2026-09-07': { link: 'https://pan.quark.cn/s/b05b2ec5f4d5', code: 'vmr9' },
-  '2026-09-08': { link: 'https://pan.quark.cn/s/29c86f47157f', code: 'js0u' },
-  '2026-09-09': { link: 'https://pan.quark.cn/s/491958038c04', code: '02ia' },
-  '2026-09-10': { link: 'https://pan.quark.cn/s/94606bb4e9fc', code: 'imfl' },
-  '2026-09-11': { link: 'https://pan.quark.cn/s/d662e59954e8', code: 'ko7h' },
-  '2026-09-12': { link: 'https://pan.quark.cn/s/2c53566167d6', code: 'nkkb' },
-  '2026-09-13': { link: 'https://pan.quark.cn/s/863ffde5c3cb', code: 'evsp' },
-  '2026-09-14': { link: 'https://pan.quark.cn/s/626a6e759c47', code: 'vlyf' },
-  '2026-09-15': { link: 'https://pan.quark.cn/s/15096e41359f', code: 'b73g' },
-  '2026-09-16': { link: 'https://pan.quark.cn/s/5f9bce6e2333', code: 'rw0v' },
-  '2026-09-17': { link: 'https://pan.quark.cn/s/bb94a9ad683e', code: 't2l4' },
-  '2026-09-18': { link: 'https://pan.quark.cn/s/679d72f1580d', code: 'rj1q' },
-  '2026-09-19': { link: 'https://pan.quark.cn/s/1da55438e138', code: 'pg6i' },
-  '2026-09-20': { link: 'https://pan.quark.cn/s/b8f31447dc78', code: 'abjd' },
-  '2026-09-21': { link: 'https://pan.quark.cn/s/e82a74b5946e', code: 'm3qn' },
-  '2026-09-22': { link: 'https://pan.quark.cn/s/0edb79626ba1', code: 'tcjn' },
-  '2026-09-23': { link: 'https://pan.quark.cn/s/7b0e8d7f125d', code: 'c39l' },
-  '2026-09-24': { link: 'https://pan.quark.cn/s/f2ad3a54d152', code: '18wv' },
-  '2026-09-25': { link: 'https://pan.quark.cn/s/a9b29cc26f07', code: 'mhnw' }
-    // ... 其他日期
+    '2026-08-17': { link: 'https://pan.quark.cn/s/6e6a68e3ce51', code: 'lh56' },
+    '2026-08-18': { link: 'https://pan.quark.cn/s/b784e50dd8c5', code: 'l9t2' },
+    '2026-08-19': { link: 'https://pan.quark.cn/s/580c5a2d0d30', code: 'wqdo' },
+    '2026-08-20': { link: 'https://pan.quark.cn/s/3cbf2594d0a2', code: 'kizt' },
+    '2026-08-21': { link: 'https://pan.quark.cn/s/50b5709071d1', code: 'vlrm' },
+    '2026-08-22': { link: 'https://pan.quark.cn/s/0459d6383131', code: 'yy7h' },
+    '2026-08-23': { link: 'https://pan.quark.cn/s/f51ba8544b64', code: '6kuq' },
+    '2026-08-24': { link: 'https://pan.quark.cn/s/55213b922b40', code: 'u24j' },
+    '2026-08-25': { link: 'https://pan.quark.cn/s/f7e5ba5e6c44', code: 'do22' },
+    '2026-08-26': { link: 'https://pan.quark.cn/s/761ac136fa21', code: 'w51t' },
+    '2026-08-27': { link: 'https://pan.quark.cn/s/d15951b81464', code: 'y94k' },
+    '2026-08-28': { link: 'https://pan.quark.cn/s/757511119b42', code: '47wo' },
+    '2026-08-29': { link: 'https://pan.quark.cn/s/a1602b0e53ca', code: '53jn' },
+    '2026-08-30': { link: 'https://pan.quark.cn/s/0a7a8c1c201f', code: 'zv0h' },
+    '2026-08-31': { link: 'https://pan.quark.cn/s/2fb6198a1d1d', code: '9wjd' },
+    '2026-09-01': { link: 'https://pan.quark.cn/s/942e21ab9d6b', code: '28rs' },
+    '2026-09-02': { link: 'https://pan.quark.cn/s/fe42a2997ed2', code: '4p1w' },
+    '2026-09-03': { link: 'https://pan.quark.cn/s/6122150ada3f', code: 'wa5n' },
+    '2026-09-04': { link: 'https://pan.quark.cn/s/370735b8ce61', code: 'hl22' },
+    '2026-09-05': { link: 'https://pan.quark.cn/s/530e2cbbabcb', code: '141t' },
+    '2026-09-06': { link: 'https://pan.quark.cn/s/8f3d7a0a7890', code: 'dnsu' },
+    '2026-09-07': { link: 'https://pan.quark.cn/s/b05b2ec5f4d5', code: 'vmr9' },
+    '2026-09-08': { link: 'https://pan.quark.cn/s/29c86f47157f', code: 'js0u' },
+    '2026-09-09': { link: 'https://pan.quark.cn/s/491958038c04', code: '02ia' },
+    '2026-09-10': { link: 'https://pan.quark.cn/s/94606bb4e9fc', code: 'imfl' },
+    '2026-09-11': { link: 'https://pan.quark.cn/s/d662e59954e8', code: 'ko7h' },
+    '2026-09-12': { link: 'https://pan.quark.cn/s/2c53566167d6', code: 'nkkb' },
+    '2026-09-13': { link: 'https://pan.quark.cn/s/863ffde5c3cb', code: 'evsp' },
+    '2026-09-14': { link: 'https://pan.quark.cn/s/626a6e759c47', code: 'vlyf' },
+    '2026-09-15': { link: 'https://pan.quark.cn/s/15096e41359f', code: 'b73g' },
+    '2026-09-16': { link: 'https://pan.quark.cn/s/5f9bce6e2333', code: 'rw0v' },
+    '2026-09-17': { link: 'https://pan.quark.cn/s/bb94a9ad683e', code: 't2l4' },
+    '2026-09-18': { link: 'https://pan.quark.cn/s/679d72f1580d', code: 'rj1q' },
+    '2026-09-19': { link: 'https://pan.quark.cn/s/1da55438e138', code: 'pg6i' },
+    '2026-09-20': { link: 'https://pan.quark.cn/s/b8f31447dc78', code: 'abjd' },
+    '2026-09-21': { link: 'https://pan.quark.cn/s/e82a74b5946e', code: 'm3qn' },
+    '2026-09-22': { link: 'https://pan.quark.cn/s/0edb79626ba1', code: 'tcjn' },
+    '2026-09-23': { link: 'https://pan.quark.cn/s/7b0e8d7f125d', code: 'c39l' },
+    '2026-09-24': { link: 'https://pan.quark.cn/s/f2ad3a54d152', code: '18wv' },
+    '2026-09-25': { link: 'https://pan.quark.cn/s/a9b29cc26f07', code: 'mhnw' },
+    '2026-09-26': { link: 'https://pan.quark.cn/s/44786f948b63', code: 'h24u' },
+    '2026-09-27': { link: 'https://pan.quark.cn/s/340ec15d6f7b', code: 'r9na' },
+    '2026-09-28': { link: 'https://pan.quark.cn/s/7f6e7a931a50', code: 'sg2z' },
+    '2026-09-29': { link: 'https://pan.quark.cn/s/83dd5d098aae', code: 'ksws' },
+    '2026-09-30': { link: 'https://pan.quark.cn/s/dea8d9088b97', code: 'o64y' },
+    '2026-10-01': { link: 'https://pan.quark.cn/s/2e61f4e8f282', code: 'xhom' },
+    '2026-10-02': { link: 'https://pan.quark.cn/s/3ee79ba9f32d', code: 'wix8' },
+    '2026-10-03': { link: 'https://pan.quark.cn/s/abc9680a38c0', code: '4uj2' },
+    '2026-10-04': { link: 'https://pan.quark.cn/s/6b3b370c55bd', code: 'hsfr' },
+    '2026-10-05': { link: 'https://pan.quark.cn/s/d94c29df7e63', code: 'ej4s' },
+    '2026-10-06': { link: 'https://pan.quark.cn/s/bf7598846aec', code: '74ru' },
+    '2026-10-07': { link: 'https://pan.quark.cn/s/c9954532067c', code: '7g31' },
+    '2026-10-08': { link: 'https://pan.quark.cn/s/507a36e100a2', code: 'gdo4' },
+    '2026-10-09': { link: 'https://pan.quark.cn/s/82755ca81c3b', code: '3ikp' },
+    '2026-10-10': { link: 'https://pan.quark.cn/s/95e983373a8b', code: 'dwc9' },
+    '2026-10-11': { link: 'https://pan.quark.cn/s/574d6b63400a', code: 'll7n' },
+    '2026-10-12': { link: 'https://pan.quark.cn/s/c1b462986761', code: 'szjq' }
   };
 
-  // === 2. 核心工具函数 ===
+  // ═══════════════════════════════════════════
+  // 2. 工具函数
+  // ═══════════════════════════════════════════
   function getBeijingDate() {
     const now = new Date();
     const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-    return new Date(utc + 8 * 3600000).toLocaleDateString('sv'); // 格式 YYYY-MM-DD
+    return new Date(utc + 8 * 3600000).toLocaleDateString('sv');
   }
 
-  function checkVerificationStatus() {
-    return localStorage.getItem('lastVerifiedDate') === getBeijingDate();
+  function checkVerified() {
+    return localStorage.getItem('zaozi_verified') === getBeijingDate();
   }
 
-  function setVerificationStatus() {
-    localStorage.setItem('lastVerifiedDate', getBeijingDate());
+  function setVerified() {
+    localStorage.setItem('zaozi_verified', getBeijingDate());
   }
 
-  // === 3. UI 控制函数 ===
-  function showOverlay() {
-    // 禁用背景交互
-    document.body.style.overflow = 'hidden'; // 禁止滚动
+  // ═══════════════════════════════════════════
+  // 3. UI 控制
+  // ═══════════════════════════════════════════
+  function showModal() {
+    document.body.style.overflow = 'hidden';
     const modal = document.getElementById('accessModal');
-    if(modal) modal.style.display = 'flex';
-    
-    // 模糊/禁用背景元素 (根据你的实际ID调整)
-    const targets = document.querySelectorAll('#typeNav button, #navSection a, .resource-card');
-    targets.forEach(el => {
-      el.style.pointerEvents = 'none'; 
-      el.style.opacity = '0.5';
-      el.style.filter = 'blur(2px)';
-    });
+    if (modal) modal.style.display = 'flex';
+
+    // 创建全屏拦截遮罩
+    if (!document.getElementById('verifyBlockOverlay')) {
+      const overlay = document.createElement('div');
+      overlay.id = 'verifyBlockOverlay';
+      document.body.appendChild(overlay);
+    }
   }
 
-  function hideOverlay() {
-    document.body.style.overflow = ''; // 恢复滚动
+  function hideModal() {
+    document.body.style.overflow = '';
     const modal = document.getElementById('accessModal');
-    if(modal) modal.style.display = 'none';
+    if (modal) modal.style.display = 'none';
 
-    const targets = document.querySelectorAll('#typeNav button, #navSection a, .resource-card');
-    targets.forEach(el => {
-      el.style.pointerEvents = 'auto'; 
-      el.style.opacity = '1';
-      el.style.filter = 'none';
-    });
+    const overlay = document.getElementById('verifyBlockOverlay');
+    if (overlay) overlay.remove();
   }
 
   function updateAccessInfo() {
@@ -138,100 +248,105 @@
 
     if (record && linkBtn) {
       linkBtn.href = record.link;
-      console.log('✅ 已加载今日链接:', record.link);
-    } else {
-      console.warn('⚠️ 未找到今日配置:', today);
-      if(linkBtn) {
-          linkBtn.href = '#';
-          linkBtn.onclick = (e) => { e.preventDefault(); alert('管理员未配置今日链接'); };
-      }
+    } else if (linkBtn) {
+      linkBtn.href = '#';
+      linkBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        alert('管理员未配置今日访问码，请联系管理员。');
+      });
     }
   }
 
-  // === 4. 事件绑定 ===
+  // ═══════════════════════════════════════════
+  // 4. 验证成功后触发主站数据加载
+  // ═══════════════════════════════════════════
+  function triggerDataLoad() {
+    // 优先调用主脚本暴露的函数
+    if (typeof window.zaoziLoadData === 'function') {
+      window.zaoziLoadData();
+    }
+    // 其次尝试自定义事件
+    else if (typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('zaozi:verified'));
+    }
+    // 兜底：刷新页面
+    else {
+      location.reload();
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // 5. 事件绑定
+  // ═══════════════════════════════════════════
   function bindEvents() {
     const verifyBtn = document.getElementById('verifyBtn');
     const input = document.getElementById('accessCodeInput');
     const errorText = document.getElementById('errorText');
-    const linkBtn = document.getElementById('accessLink');
 
-    // 验证按钮点击
     if (verifyBtn) {
-      verifyBtn.addEventListener('click', () => {
+      verifyBtn.addEventListener('click', function () {
         const val = input.value.trim();
         const today = getBeijingDate();
         const record = ACCESS_MAP[today];
 
+        // 重置错误状态
+        errorText.className = 'error-msg';
+        input.classList.remove('input-error');
+
         if (!record) {
-          errorText.textContent = '系统错误：今日未配置。';
-          errorText.classList.remove('hidden');
+          errorText.textContent = '⚠️ 系统错误：今日未配置访问码';
+          errorText.className = 'error-msg show';
           return;
         }
 
         if (val === record.code) {
-          // 验证成功
-          setVerificationStatus();
-          hideOverlay();
+          // ✅ 验证成功
+          setVerified();
+          hideModal();
           input.value = '';
-          errorText.classList.add('hidden');
-          
-          // 触发主页数据加载
-          if (typeof window.loadData === 'function') {
-            window.loadData();
-          } else {
-            console.log('ℹ️ loadData 函数不存在，尝试刷新页面...');
-            location.reload(); 
-          }
+          triggerDataLoad();
         } else {
-          // 验证失败
-          errorText.textContent = '❌ 访问码错误，请重试。';
-          errorText.classList.remove('hidden');
-          input.classList.add('border-red-500');
+          // ❌ 验证失败
+          errorText.textContent = '❌ 访问码错误，请重试';
+          errorText.className = 'error-msg show';
+          input.classList.add('input-error');
+          input.focus();
         }
       });
     }
 
-    // 回车键支持
     if (input) {
-      input.addEventListener('keypress', e => {
-        if (e.key === 'Enter' && verifyBtn) verifyBtn.click();
+      input.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') verifyBtn.click();
       });
-    }
-
-    // 获取链接按钮的额外保护（防止 href 为空时点击无效）
-    if (linkBtn) {
-        linkBtn.addEventListener('click', (e) => {
-            if (!linkBtn.href || linkBtn.href.endsWith('#')) {
-                e.preventDefault();
-                alert('链接尚未加载，请刷新页面重试。');
-            }
-        });
+      // 输入时清除错误状态
+      input.addEventListener('input', function () {
+        errorText.className = 'error-msg';
+        input.classList.remove('input-error');
+      });
     }
   }
 
-  // === 5. 初始化入口 ===
-  // 使用 DOMContentLoaded 确保 HTML 元素都已生成
+  // ═══════════════════════════════════════════
+  // 6. 初始化
+  // ═══════════════════════════════════════════
+  function init() {
+    updateAccessInfo();
+    bindEvents();
+
+    if (checkVerified()) {
+      hideModal();
+      triggerDataLoad();
+    } else {
+      showModal();
+    }
+  }
+
+  // 确保 DOM 就绪后初始化
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-
-  function init() {
-    console.log('🛡️ 验证模块初始化...');
-    updateAccessInfo();
-    bindEvents();
-
-    if (checkVerificationStatus()) {
-      console.log('✅ 今日已验证，直接放行');
-      hideOverlay();
-      // 如果已验证，尝试加载数据
-      if (typeof window.loadData === 'function') window.loadData();
-    } else {
-      console.log('⏸️ 未验证，显示弹窗');
-      showOverlay();
-    }
-  }
-
 })();
 </script>
