@@ -1,0 +1,239 @@
+<!-- layouts/partials/time-group.html -->
+<style>
+  /* 分组头横跨整个网格 */
+  .tg-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 2rem 0 0.5rem 0;
+    padding: 0.4rem 0;
+    position: sticky;
+    top: 0;
+    background: var(--color-bg, #f5f6fa);
+    z-index: 10;
+    grid-column: 1 / -1;
+  }
+  .tg-header.tg-first {
+    margin-top: 0;
+  }
+  .tg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 1rem;
+    background: var(--color-primary, #4f46e5);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: var(--radius-pill, 999px);
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  }
+  .tg-line {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border, #e5e7eb);
+  }
+  /* 分组切换按钮 */
+  .tg-switcher {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+  .tg-switcher-label {
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #6b7280);
+    margin-right: 4px;
+  }
+  .tg-switch-btn {
+    padding: 4px 14px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-pill, 999px);
+    background: var(--color-card, #fff);
+    color: var(--color-text-body, #4a4a68);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tg-switch-btn:hover {
+    border-color: var(--color-primary, #4f46e5);
+    color: var(--color-primary, #4f46e5);
+  }
+  .tg-switch-btn.active {
+    background: var(--color-primary, #4f46e5);
+    color: #fff;
+    border-color: var(--color-primary, #4f46e5);
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  var CONTAINER_ID = 'resourceList';
+  var CARD_CLASS = 'resource-card';
+  var currentGroupBy = 'month';
+
+  function parseDate(str) {
+    if (!str) return null;
+    var s = str.replace(/[年\/]/g, '-').replace(/月/g, '-').replace(/日/g, '').trim();
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function getGroupInfo(date, mode) {
+    var y = date.getFullYear();
+    var m = date.getMonth() + 1;
+    var d = date.getDate();
+    var ms = String(m).padStart(2, '0');
+    var ds = String(d).padStart(2, '0');
+
+    if (mode === 'month') {
+      return { key: y + '-' + ms, label: y + '年' + m + '月' };
+    } else if (mode === 'week') {
+      var day = date.getDay() || 7;
+      var mon = new Date(date);
+      mon.setDate(d - day + 1);
+      return {
+        key: mon.getFullYear() + '-' + String(mon.getMonth() + 1).padStart(2, '0') + '-' + String(mon.getDate()).padStart(2, '0'),
+        label: mon.getFullYear() + '年' + (mon.getMonth() + 1) + '月' + mon.getDate() + '日 那一周'
+      };
+    } else {
+      return { key: y + '-' + ms + '-' + ds, label: y + '年' + m + '月' + d + '日' };
+    }
+  }
+
+  function createHeader(label, isFirst) {
+    var div = document.createElement('div');
+    div.className = 'tg-header' + (isFirst ? ' tg-first' : '');
+    div.setAttribute('data-tg-header', 'true');
+    div.innerHTML =
+      '<span class="tg-badge">📅 ' + label + '</span>' +
+      '<div class="tg-line"></div>';
+    return div;
+  }
+
+  function createSwitcher() {
+    if (document.getElementById('tgSwitcher')) return;
+    var container = document.getElementById(CONTAINER_ID);
+    if (!container) return;
+
+    var wrapper = document.createElement('div');
+    wrapper.id = 'tgSwitcher';
+    wrapper.className = 'tg-switcher';
+    wrapper.innerHTML =
+      '<span class="tg-switcher-label">分组方式：</span>' +
+      '<button class="tg-switch-btn active" data-mode="month">按月</button>' +
+      '<button class="tg-switch-btn" data-mode="week">按周</button>' +
+      '<button class="tg-switch-btn" data-mode="day">按天</button>';
+
+    container.parentNode.insertBefore(wrapper, container);
+
+    wrapper.querySelectorAll('.tg-switch-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        wrapper.querySelectorAll('.tg-switch-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        currentGroupBy = btn.getAttribute('data-mode');
+        applyGrouping();
+      });
+    });
+  }
+
+  function applyGrouping() {
+    var container = document.getElementById(CONTAINER_ID);
+    if (!container) return;
+
+    // 移除旧的分组头
+    container.querySelectorAll('[data-tg-header]').forEach(function (el) { el.remove(); });
+
+    // 获取当前可见的卡片
+    var allCards = Array.from(container.querySelectorAll('.' + CARD_CLASS));
+    var visibleCards = allCards.filter(function (card) {
+      return card.style.display !== 'none';
+    });
+
+    if (visibleCards.length === 0) return;
+
+    // 分组
+    var groups = {};
+    var noDateCards = [];
+
+    visibleCards.forEach(function (card) {
+      var dateStr = card.getAttribute('data-date') || '';
+      var date = parseDate(dateStr);
+      if (!date) {
+        noDateCards.push(card);
+        return;
+      }
+      var info = getGroupInfo(date, currentGroupBy);
+      if (!groups[info.key]) {
+        groups[info.key] = { key: info.key, label: info.label, cards: [] };
+      }
+      groups[info.key].cards.push(card);
+    });
+
+    // 按时间倒序
+    var sortedKeys = Object.keys(groups).sort(function (a, b) { return b.localeCompare(a); });
+
+    // 插入分组头
+    sortedKeys.forEach(function (key, index) {
+      var group = groups[key];
+      var header = createHeader(group.label, index === 0 && noDateCards.length === 0);
+      container.insertBefore(header, group.cards[0]);
+    });
+
+    // 无日期的放最后
+    if (noDateCards.length > 0) {
+      var header = createHeader('未分类', sortedKeys.length === 0);
+      container.insertBefore(header, noDateCards[0]);
+    }
+  }
+
+  var debounceTimer = null;
+  function debouncedApply() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(applyGrouping, 200);
+  }
+
+  function init() {
+    var container = document.getElementById(CONTAINER_ID);
+    if (!container) { setTimeout(init, 500); return; }
+
+    createSwitcher();
+    applyGrouping();
+
+    var observer = new MutationObserver(function (mutations) {
+      var hasRelevantChange = mutations.some(function (m) {
+        return Array.from(m.addedNodes).some(function (n) {
+          return n.nodeType === 1 && !n.hasAttribute('data-tg-header') && n.id !== 'tgSwitcher';
+        }) || Array.from(m.removedNodes).some(function (n) {
+          return n.nodeType === 1 && !n.hasAttribute('data-tg-header');
+        });
+      });
+      if (hasRelevantChange) debouncedApply();
+    });
+    observer.observe(container, { childList: true, subtree: false });
+
+    // 监听分页切换（display 变化）
+    var lastVisibleCount = -1;
+    setInterval(function () {
+      var cards = container.querySelectorAll('.' + CARD_CLASS);
+      var visibleCount = 0;
+      cards.forEach(function (c) { if (c.style.display !== 'none') visibleCount++; });
+      if (visibleCount !== lastVisibleCount) {
+        lastVisibleCount = visibleCount;
+        debouncedApply();
+      }
+    }, 300);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>

@@ -2,20 +2,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput');
   const resourceList = document.getElementById('resourceList');
   const noResults = document.getElementById('noResults');
-  const filterBtns = document.querySelectorAll('.filter-btn');
 
   // 配置项
-  const ITEMS_PER_PAGE = 12; // 每页显示数量，按需修改
+  const ITEMS_PER_PAGE = 12;
   let currentPage = 1;
   let activeCategory = '全部';
   let currentFilteredData = [];
 
-  // 自动创建分页容器（如果HTML中没有）
+  // 自动创建分页容器
   let paginationContainer = document.getElementById('js-pagination');
   if (!paginationContainer) {
     paginationContainer = document.createElement('nav');
     paginationContainer.id = 'js-pagination';
-    paginationContainer.className = 'hugo-pagination'; // 复用你之前的CSS类名
+    paginationContainer.className = 'hugo-pagination';
     resourceList.parentNode.insertBefore(paginationContainer, resourceList.nextSibling);
   }
 
@@ -35,21 +34,18 @@ document.addEventListener('DOMContentLoaded', () => {
     pageData.forEach(item => {
       const card = document.createElement('div');
       card.className = 'resource-card';
-      // 保留 dataset 以便后续可能的操作
       card.dataset.title = item.title;
       card.dataset.categories = JSON.stringify(item.categories || []);
+      card.dataset.date = item.date || '';
 
-      // 生成分类标签
       const tagsHtml = (item.categories || [])
         .map(c => `<span class="tag">${c}</span>`)
         .join('');
 
-      // ⚠️ 关键：过滤掉 #VALUE! 无效链接，并生成按钮
       let linksHtml = '';
       if (Array.isArray(item.links)) {
         item.links.forEach(link => {
           if (link.url && link.url !== '#VALUE!' && link.url.startsWith('http')) {
-            // 根据平台名添加不同样式类（可选）
             const platformClass = link.platform.toLowerCase().replace(/\s+/g, '-');
             linksHtml += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="download-btn btn-${platformClass}">${link.platform}</a>`;
           }
@@ -87,10 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return btn;
     };
 
-    // 上一页
     paginationContainer.appendChild(createBtn('«', currentPage - 1, false, currentPage === 1));
 
-    // 智能页码：始终显示首尾 + 当前页附近
     const delta = 2;
     const range = [];
     for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
@@ -112,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // 下一页
     paginationContainer.appendChild(createBtn('»', currentPage + 1, false, currentPage === totalPages));
   }
 
@@ -129,45 +122,105 @@ document.addEventListener('DOMContentLoaded', () => {
       const matchCategory = activeCategory === '全部' ||
         (item.categories || []).includes(activeCategory);
       const matchSearch = !keyword || (item.title || '').toLowerCase().includes(keyword);
-      return matchCategory && matchSearch;
+
+      // 🔑 有搜索关键词时，忽略分类筛选，搜全部资源
+      if (keyword) {
+        return matchSearch;
+      }
+      return matchCategory;
     });
     currentPage = 1;
     renderPage();
   }
 
-  // ===== 事件绑定（完全保留原有逻辑）=====
+  // ===== 更新所有按钮的高亮状态 =====
+  function updateActiveButtons() {
+    // 清除所有高亮
+    document.querySelectorAll('.filter-btn, .filter-parent-btn').forEach(b => b.classList.remove('active'));
+
+    // 高亮当前选中的子按钮
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      if (btn.dataset.category === activeCategory) {
+        btn.classList.add('active');
+      }
+    });
+
+    // 如果选中的是某个父分类的子分类，父按钮也高亮
+    document.querySelectorAll('.filter-group').forEach(group => {
+      const parentBtn = group.querySelector('.filter-parent-btn');
+      const childBtns = group.querySelectorAll('.filter-btn');
+      childBtns.forEach(btn => {
+        if (btn.dataset.category === activeCategory) {
+          parentBtn.classList.add('active');
+        }
+      });
+      // 如果选中的就是父分类本身
+      if (parentBtn.dataset.category === activeCategory) {
+        parentBtn.classList.add('active');
+      }
+    });
+  }
+
+  // ===== 事件绑定：使用事件委托 =====
   searchInput.addEventListener('input', applyFilters);
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); applyFilters(); }
   });
 
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeCategory = btn.dataset.category;
-      applyFilters();
-    });
-  });
+  // 事件委托：监听整个 filterRow 的点击
+  const filterRow = document.getElementById('filterRow');
+  if (filterRow) {
+    filterRow.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
 
-  // 分类折叠/展开（完全保留）
+      // 阻止冒泡，避免触发 document 的关闭下拉
+      e.stopPropagation();
+
+      activeCategory = btn.dataset.category;
+      updateActiveButtons();
+      applyFilters();
+
+      // 点击子分类后关闭下拉
+      const children = btn.closest('.filter-children');
+      if (children) {
+        children.classList.remove('show');
+        const parentBtn = children.parentElement.querySelector('.filter-parent-btn');
+        if (parentBtn) parentBtn.classList.remove('open');
+      }
+    });
+  }
+
+  // 分类折叠/展开
   const toggleBtn = document.getElementById('toggleFilter');
   if (toggleBtn) {
-    const allFilterBtns = document.querySelectorAll('#filterBar .filter-btn');
-    const SHOW_COUNT = 5;
+    const filterRowEl = document.getElementById('filterRow');
+    const allExtras = filterRowEl.querySelectorAll('.filter-extra');
+    const SHOW_COUNT = 6;
     let expanded = false;
 
-    // SVG 图标常量
     const ICON_UP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
     const ICON_DOWN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
     function updateVisibility() {
-      allFilterBtns.forEach((btn, i) => {
-        btn.style.display = (i < SHOW_COUNT || expanded) ? '' : 'none';
+      allExtras.forEach((el, i) => {
+        if (i < SHOW_COUNT) {
+          el.style.display = '';
+          el.classList.remove('filter-extra-hidden');
+        } else {
+          el.style.display = expanded ? '' : 'none';
+        }
       });
       toggleBtn.innerHTML = expanded
         ? '收起分类 ' + ICON_UP
         : '展开更多 ' + ICON_DOWN;
+
+      // 如果没有需要隐藏的，隐藏按钮自身
+      if (allExtras.length <= SHOW_COUNT) {
+        toggleBtn.style.display = 'none';
+      } else {
+        toggleBtn.style.display = '';
+      }
     }
     updateVisibility();
     toggleBtn.addEventListener('click', () => {

@@ -1,5 +1,5 @@
 baseURL = "/"
-languageCode = "zh-cn"
+locale = "zh-CN"
 title = "DouJiao"
 paginate = 10
 

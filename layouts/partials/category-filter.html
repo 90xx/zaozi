@@ -17,14 +17,230 @@
 {{ end }}
 {{ $uniqueCats := uniq $allCats | sort }}
 
+<style>
+  .filter-bar { margin-bottom: 1.5rem; }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .filter-btn {
+    padding: 6px 18px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 999px;
+    background: var(--color-card, #fff);
+    color: var(--color-text-body, #4a4a68);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.4;
+  }
+  .filter-btn:hover {
+    border-color: var(--color-primary, #4f46e5);
+    color: var(--color-primary, #4f46e5);
+  }
+  .filter-btn.active {
+    background: var(--color-primary, #4f46e5);
+    color: #fff;
+    border-color: var(--color-primary, #4f46e5);
+  }
+
+  /* 可折叠的父分类组 */
+  .filter-group {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filter-parent-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 999px;
+    background: var(--color-card, #fff);
+    color: var(--color-text-body, #4a4a68);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.4;
+  }
+  .filter-parent-btn:hover {
+    border-color: var(--color-primary, #4f46e5);
+    color: var(--color-primary, #4f46e5);
+  }
+  .filter-parent-btn.active {
+    background: var(--color-primary, #4f46e5);
+    color: #fff;
+    border-color: var(--color-primary, #4f46e5);
+  }
+  .filter-parent-btn .arrow {
+    font-size: 0.6rem;
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .filter-parent-btn.open .arrow {
+    transform: rotate(180deg);
+  }
+
+  /* 子分类下拉面板 */
+  .filter-children {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 10px 14px;
+    background: var(--color-card, #fff);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    min-width: 180px;
+  }
+  .filter-children.show {
+    display: flex;
+  }
+  .filter-children .filter-btn {
+    font-size: 0.8rem;
+    padding: 4px 14px;
+  }
+
+  /* 展开/收起按钮 */
+  .filter-toggle {
+    margin-top: 8px;
+  }
+  .filter-toggle-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 999px;
+    background: var(--color-card, #fff);
+    color: var(--color-text-muted, #6b7280);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .filter-toggle-btn:hover {
+    border-color: var(--color-primary, #4f46e5);
+    color: var(--color-primary, #4f46e5);
+  }
+</style>
+
 <div class="filter-wrapper">
   <div class="filter-bar" id="filterBar">
-    <button class="filter-btn active" data-category="全部">全部</button>
-    {{ range $index, $cat := $uniqueCats }}
-      <button class="filter-btn" data-category="{{ $cat }}" data-index="{{ $index }}">{{ $cat }}</button>
-    {{ end }}
+    <div class="filter-row" id="filterRow">
+
+      {{/* ====== "全部" 按钮 ====== */}}
+      <button class="filter-btn active" data-category="全部">全部</button>
+
+      {{/* ====== 普通分类（不在折叠组里的） ====== */}}
+      {{/* 定义哪些分类属于折叠组的子项，这些不单独显示 */}}
+      {{ $groupChildren := slice "完结漫" "完结漫（台版无光）" "韩漫小说" "韩漫小说（整理）" "韩漫小说人翻/精翻" "韩漫广播剧" "韩漫广播剧（韩抓中字）" }}
+      {{/* 定义折叠组的父分类名 */}}
+      {{ $groupParents := slice "完结漫" "韩漫小说" "韩漫广播剧" }}
+
+      {{ range $uniqueCats }}
+        {{ $cat := . }}
+        {{/* 跳过属于折叠组的分类（它们会在下面单独渲染） */}}
+        {{ if and (not (in $groupChildren $cat)) (not (in $groupParents $cat)) }}
+          <button class="filter-btn filter-extra" data-category="{{ $cat }}">{{ $cat }}</button>
+        {{ end }}
+      {{ end }}
+
+      {{/* ====== 折叠组：完结漫 ====== */}}
+      {{ $hasWanjie := false }}
+      {{ range $uniqueCats }}{{ if or (eq . "完结漫") (eq . "完结漫（台版无光）") }}{{ $hasWanjie = true }}{{ end }}{{ end }}
+      {{ if $hasWanjie }}
+      <div class="filter-group filter-extra" data-parent="完结漫">
+        <button class="filter-parent-btn" data-category="完结漫" onclick="event.stopPropagation(); toggleDropdown(this)">
+          完结漫 <span class="arrow">▾</span>
+        </button>
+        <div class="filter-children">
+          {{ range $uniqueCats }}
+            {{ if or (eq . "完结漫") (eq . "完结漫（台版无光）") }}
+            <button class="filter-btn" data-category="{{ . }}">{{ . }}</button>
+            {{ end }}
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+
+    
+      {{/* ====== 折叠组：韩漫小说 ====== */}}
+      {{ $hasHanxiaoshuo := false }}
+      {{ range $uniqueCats }}{{ if or (eq . "韩漫小说") (eq . "韩漫小说（整理）") (eq . "韩漫小说人翻/精翻") }}{{ $hasHanxiaoshuo = true }}{{ end }}{{ end }}
+      {{ if $hasHanxiaoshuo }}
+      <div class="filter-group filter-extra" data-parent="韩漫小说">
+        <button class="filter-parent-btn" data-category="韩漫小说" onclick="event.stopPropagation(); toggleDropdown(this)">
+          韩漫小说 <span class="arrow">▾</span>
+        </button>
+        <div class="filter-children">
+          {{ range $uniqueCats }}
+            {{ if or (eq . "韩漫小说") (eq . "韩漫小说（整理）") (eq . "韩漫小说人翻/精翻") }}
+            <button class="filter-btn" data-category="{{ . }}">{{ . }}</button>
+            {{ end }}
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+
+      {{/* ====== 折叠组：韩漫广播剧 ====== */}}
+      {{ $hasHanboju := false }}
+      {{ range $uniqueCats }}{{ if or (eq . "韩漫广播剧") (eq . "韩漫广播剧（韩抓中字）") }}{{ $hasHanboju = true }}{{ end }}{{ end }}
+      {{ if $hasHanboju }}
+      <div class="filter-group filter-extra" data-parent="韩漫广播剧">
+        <button class="filter-parent-btn" data-category="韩漫广播剧" onclick="event.stopPropagation(); toggleDropdown(this)">
+          韩漫广播剧 <span class="arrow">▾</span>
+        </button>
+        <div class="filter-children">
+          {{ range $uniqueCats }}
+            {{ if or (eq . "韩漫广播剧") (eq . "韩漫广播剧（韩抓中字）") }}
+            <button class="filter-btn" data-category="{{ . }}">{{ . }}</button>
+            {{ end }}
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+
+    </div>
   </div>
-  {{ if gt (len $uniqueCats) 8 }}
-    <button class="toggle-btn" id="toggleFilter">展开全部 ▼</button>
-  {{ end }}
+  <div class="filter-toggle">
+    <button class="filter-toggle-btn" id="toggleFilter">展开更多 ▾</button>
+  </div>
 </div>
+
+<script>
+  function toggleDropdown(parentBtn) {
+    var group = parentBtn.closest('.filter-group');
+    var children = group.querySelector('.filter-children');
+    var isOpen = children.classList.contains('show');
+
+    document.querySelectorAll('.filter-children.show').forEach(function(el) {
+      el.classList.remove('show');
+      el.parentElement.querySelector('.filter-parent-btn').classList.remove('open');
+    });
+
+    if (!isOpen) {
+      children.classList.add('show');
+      parentBtn.classList.add('open');
+    }
+  }
+
+  document.addEventListener('click', function() {
+    document.querySelectorAll('.filter-children.show').forEach(function(el) {
+      el.classList.remove('show');
+      el.parentElement.querySelector('.filter-parent-btn').classList.remove('open');
+    });
+  });
+</script>
