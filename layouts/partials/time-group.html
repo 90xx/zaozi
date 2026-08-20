@@ -73,7 +73,8 @@
 
   var CONTAINER_ID = 'resourceList';
   var CARD_CLASS = 'resource-card';
-  var currentGroupBy = 'month';
+  // ✅ 修改1：默认分组方式改为按天
+  var currentGroupBy = 'day';
 
   function parseDate(str) {
     if (!str) return null;
@@ -122,11 +123,12 @@
     var wrapper = document.createElement('div');
     wrapper.id = 'tgSwitcher';
     wrapper.className = 'tg-switcher';
+    // ✅ 修改2：按钮顺序调整为 按天 → 按周 → 按月，默认激活"按天"
     wrapper.innerHTML =
       '<span class="tg-switcher-label">分组方式：</span>' +
-      '<button class="tg-switch-btn active" data-mode="month">按月</button>' +
+      '<button class="tg-switch-btn active" data-mode="day">按天</button>' +
       '<button class="tg-switch-btn" data-mode="week">按周</button>' +
-      '<button class="tg-switch-btn" data-mode="day">按天</button>';
+      '<button class="tg-switch-btn" data-mode="month">按月</button>';
 
     container.parentNode.insertBefore(wrapper, container);
 
