@@ -241,10 +241,10 @@
     }
   }
 
-  // ═══════════════════════════════════════════
+    // ═══════════════════════════════════════════
   // 4. ✅ 全局点击拦截器（捕获阶段）
   //    未验证时：拦截所有页面点击 → 弹出验证框
-  //    已验证时：完全放行
+  //    已验证时 / 白名单元素：完全放行
   // ═══════════════════════════════════════════
   function globalClickInterceptor(e) {
     if (isVerified) return;
@@ -252,6 +252,22 @@
     // 模态框内部点击放行（输入框、按钮、获取访问码链接）
     const modal = document.getElementById('accessModal');
     if (modal && modal.contains(e.target)) return;
+
+    // ✅ 白名单：无论是否验证都允许点击的元素
+    const target = e.target.closest('a, button');
+    if (target) {
+      const href = target.getAttribute('href') || '';
+      const text = target.textContent || '';
+      // 通过链接地址或按钮文字匹配白名单
+      if (
+        href.includes('kdocs.cn') ||       // 新人必看
+        href.includes('tally.so') ||        // 留言板
+        text.includes('新人必看') ||
+        text.includes('留言板')
+      ) {
+        return; // 放行，不拦截
+      }
+    }
 
     // 未验证 → 阻止原始点击行为 + 弹出验证框
     e.preventDefault();
