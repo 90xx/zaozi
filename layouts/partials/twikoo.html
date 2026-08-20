@@ -1,3 +1,4 @@
+<!-- TWIKOO_CUSTOM_V2 -->
 <!-- layouts/partials/twikoo.html -->
 <div id="tcomment" class="twikoo-container"></div>
 
@@ -5,8 +6,20 @@
 <script>
   twikoo.init({
     envId: 'https://twikoo-worker.daixiangli12.workers.dev',
-    el: '#tcomment'
-  })
+    el: '#tcomment',
+    placeholder: '说点什么吧...',
+    requiredFields: [], 
+    showUserAgent: false,
+    gravatar: { cdn: '' }
+  }).then(() => {
+    // ✅ 运行时兜底：初始化完成后再次清空必填项并注入默认值
+    const inputs = document.querySelectorAll('#tcomment .tk-meta-input input');
+    inputs.forEach(input => {
+      // 给隐藏字段填入占位值，防止后端校验拦截
+      if (!input.value) input.value = '匿名';
+      input.removeAttribute('required');
+    });
+  });
 </script>
 
 <style>
@@ -14,5 +27,26 @@
     margin-top: 3rem;
     padding: 1.5rem 0;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* ✅ 强制隐藏元数据输入区（覆盖所有可能的类名变体） */
+  #tcomment .tk-meta-input,
+  #tcomment .tk-row-actions,
+  #tcomment input[name="nick"],
+  #tcomment input[name="mail"],
+  #tcomment input[name="link"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 让评论框和提交按钮区域自适应宽度 */
+  #tcomment .tk-textarea-wrapper,
+  #tcomment .tk-submit {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 </style>
