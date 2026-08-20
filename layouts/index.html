@@ -6,10 +6,10 @@
   <title>{{ .Site.Title }}</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-
 <body>
-  <!-- 💬 留言反馈按钮 -->
-  <a href="你的表单链接" target="_blank" 
+
+  <!-- 💬 公告/留言入口（保持原样不动） -->
+  <a href="https://www.kdocs.cn/l/crOyXHBVm96c" target="_blank" 
      style="position:fixed; top:1.25rem; right:2rem; z-index:999;
             padding:0.6rem 1.4rem; border-radius:999px;
             background:#1a1a2e; 
@@ -18,7 +18,7 @@
             box-shadow:0 2px 8px rgba(0,0,0,0.3);"
      onmouseover="this.style.background='#2a2a4a'"
      onmouseout="this.style.background='#1a1a2e'">
-    💬 留言反馈
+    💬 新人必看
   </a>
 
   <header>
@@ -33,38 +33,36 @@
       <input type="text" id="searchInput" placeholder="搜索资源名称...">
     </div>
 
-    <!-- ✅ 新增：排序提示文字 (纯文本，不占卡片位置) -->
-    <div style="text-align: center; font-size: 12px; color: #999; margin-bottom: 12px;">
-      ↓ 按时间排列
-    </div>
-
-    <!-- JS 渲染容器 -->
     <div id="resourceList" class="resource-grid"></div>
 
     <div id="noResults" class="no-results" style="display:none;">
       😕 没有找到匹配的资源
     </div>
+
+    <!-- ✅ Twikoo 评论区 -->
+    {{ partial "twikoo.html" . }}
   </main>
 
-  <!-- ✅ 适配 Hugo v0.156+ ：使用 hugo.Data + with 安全判断 -->
- <script>
-  {{ $allResources := slice }}
-  {{ with hugo.Data.resources }}
-    {{ range $key, $val := . }}
-      {{ if reflect.IsSlice $val }}
-        {{ range $item := $val }}
-          {{ $allResources = $allResources | append $item }}
+  <!-- Hugo 数据注入 -->
+  <script>
+    {{ $allResources := slice }}
+    {{ with hugo.Data.resources }}
+      {{ range $key, $val := . }}
+        {{ if reflect.IsSlice $val }}
+          {{ range $item := $val }}
+            {{ $allResources = $allResources | append $item }}
+          {{ end }}
+        {{ else }}
+          {{ $allResources = $allResources | append $val }}
         {{ end }}
-      {{ else }}
-        {{ $allResources = $allResources | append $val }}
       {{ end }}
     {{ end }}
-  {{ end }}
-  const RESOURCES = {{ $allResources | jsonify | safeJS }};
-  console.log('[Hugo] 注入资源总数:', {{ len $allResources }});
-</script>
+    const RESOURCES = {{ $allResources | jsonify | safeJS }};
+    console.log('[Hugo] 注入资源总数:', {{ len $allResources }});
+  </script>
+
   <script src="/js/filter.js"></script>
-{{ partial "verify-gate.html" . }}
-{{ partial "time-group.html" . }}
+  {{ partial "verify-gate.html" . }}
+  {{ partial "time-group.html" . }}
 </body>
 </html>
