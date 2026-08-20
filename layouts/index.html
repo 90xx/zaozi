@@ -38,43 +38,45 @@
     <div id="noResults" class="no-results" style="display:none;">
       😕 没有找到匹配的资源
     </div>
-
  
-  <!-- Hugo 数据注入 -->
-  <script>
-    {{ $allResources := slice }}
-    {{ with hugo.Data.resources }}
-      {{ range $key, $val := . }}
-        {{ if reflect.IsSlice $val }}
-          {{ range $item := $val }}
-            {{ $allResources = $allResources | append $item }}
+    <!-- Hugo 数据注入 -->
+    <script>
+      {{ $allResources := slice }}
+      {{ with hugo.Data.resources }}
+        {{ range $key, $val := . }}
+          {{ if reflect.IsSlice $val }}
+            {{ range $item := $val }}
+              {{ $allResources = $allResources | append $item }}
+            {{ end }}
+          {{ else }}
+            {{ $allResources = $allResources | append $val }}
           {{ end }}
-        {{ else }}
-          {{ $allResources = $allResources | append $val }}
         {{ end }}
       {{ end }}
-    {{ end }}
-    const RESOURCES = {{ $allResources | jsonify | safeJS }};
-    console.log('[Hugo] 注入资源总数:', {{ len $allResources }});
-  </script>
+      const RESOURCES = {{ $allResources | jsonify | safeJS }};
+      console.log('[Hugo] 注入资源总数:', {{ len $allResources }});
+    </script>
 
-  <script src="/js/filter.js"></script>
-  {{ partial "verify-gate.html" . }}
-  {{ partial "time-group.html" . }}
+    <script src="/js/filter.js"></script>
+    {{ partial "verify-gate.html" . }}
+    {{ partial "time-group.html" . }}
 
- <!-- 💬 Twikoo 评论区容器 -->
-  <div id="tcomment" style="margin-top: 2rem; padding: 1rem;"></div>
+    <!-- 💬 外部留言入口（替代 Twikoo） -->
+    <div style="margin-top:3rem; padding:2rem 1rem; text-align:center; border-top:1px solid rgba(255,255,255,0.08);">
+      <p style="color:rgba(255,255,255,0.5); font-size:0.9rem; margin-bottom:1rem;">
+      </p>
+      <a href="https://web.wps.cn/wo/sl/v39HLe4?app_id=KeiwhRvKjT82N9D0HUUL6" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex; align-items:center; gap:0.5rem;
+                padding:0.75rem 2rem; border-radius:999px;
+                background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color:#fff; font-size:1rem; font-weight:500;
+                text-decoration:none; transition:all 0.3s ease;
+                box-shadow:0 4px 15px rgba(118,75,162,0.4);">
+        <span>✉️</span>
+        <span>留言板</span>
+      </a>
+    </div>
 
-  <!-- 📦 引入 Twikoo SDK -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/twikoo@1/dist/twikoo.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/twikoo@1/dist/twikoo.all.min.js"></script>
-
-  <!-- ⚙️ 初始化 Twikoo -->
-  <script>
-    twikoo.init({
-      envId: 'https://twikoo-worker.daixiangli12.workers.dev',
-      el: '#tcomment'
-    });
-  </script>
+  </main>
 </body>
 </html>
