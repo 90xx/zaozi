@@ -61,5 +61,20 @@
   <script src="/js/filter.js"></script>
   {{ partial "verify-gate.html" . }}
   {{ partial "time-group.html" . }}
+
+ <!-- 💬 Twikoo 评论区容器 -->
+  <div id="tcomment" style="margin-top: 2rem; padding: 1rem;"></div>
+
+  <!-- 📦 引入 Twikoo SDK -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/twikoo@1/dist/twikoo.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/twikoo@1/dist/twikoo.all.min.js"></script>
+
+  <!-- ⚙️ 初始化 Twikoo -->
+  <script>
+    twikoo.init({
+      envId: 'https://twikoo-worker.daixiangli12.workers.dev',
+      el: '#tcomment'
+    });
+  </script>
 </body>
 </html>
