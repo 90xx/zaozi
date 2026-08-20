@@ -99,15 +99,6 @@
     display: none;
   }
   #accessModal .error-msg.show { display: block; }
-
-  /* 全屏拦截遮罩（透明，仅拦截点击） */
-  #verifyBlockOverlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 99998;
-    background: transparent;
-  }
 </style>
 
 <!-- 访问码模态框 -->
@@ -213,6 +204,9 @@
     localStorage.setItem('zaozi_verified', getBeijingDate());
   }
 
+  // ✅ 验证状态内存标记（避免重复读 storage）
+  let isVerified = false;
+
   // ═══════════════════════════════════════════
   // 3. UI 控制
   // ═══════════════════════════════════════════
@@ -220,22 +214,12 @@
     document.body.style.overflow = 'hidden';
     const modal = document.getElementById('accessModal');
     if (modal) modal.style.display = 'flex';
-
-    // 创建全屏拦截遮罩
-    if (!document.getElementById('verifyBlockOverlay')) {
-      const overlay = document.createElement('div');
-      overlay.id = 'verifyBlockOverlay';
-      document.body.appendChild(overlay);
-    }
   }
 
   function hideModal() {
     document.body.style.overflow = '';
     const modal = document.getElementById('accessModal');
     if (modal) modal.style.display = 'none';
-
-    const overlay = document.getElementById('verifyBlockOverlay');
-    if (overlay) overlay.remove();
   }
 
   function updateAccessInfo() {
@@ -258,25 +242,38 @@
   }
 
   // ═══════════════════════════════════════════
-  // 4. 验证成功后触发主站数据加载
+  // 4. ✅ 全局点击拦截器（捕获阶段）
+  //    未验证时：拦截所有页面点击 → 弹出验证框
+  //    已验证时：完全放行
+  // ═══════════════════════════════════════════
+  function globalClickInterceptor(e) {
+    if (isVerified) return;
+
+    // 模态框内部点击放行（输入框、按钮、获取访问码链接）
+    const modal = document.getElementById('accessModal');
+    if (modal && modal.contains(e.target)) return;
+
+    // 未验证 → 阻止原始点击行为 + 弹出验证框
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    showModal();
+  }
+
+  // ═══════════════════════════════════════════
+  // 5. 验证成功后触发主站数据加载
   // ═══════════════════════════════════════════
   function triggerDataLoad() {
-    // 优先调用主脚本暴露的函数
     if (typeof window.zaoziLoadData === 'function') {
       window.zaoziLoadData();
-    }
-    // 其次尝试自定义事件
-    else if (typeof window.dispatchEvent === 'function') {
+    } else if (typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(new CustomEvent('zaozi:verified'));
-    }
-    // 兜底：刷新页面
-    else {
+    } else {
       location.reload();
     }
   }
 
   // ═══════════════════════════════════════════
-  // 5. 事件绑定
+  // 6. 事件绑定
   // ═══════════════════════════════════════════
   function bindEvents() {
     const verifyBtn = document.getElementById('verifyBtn');
@@ -289,7 +286,6 @@
         const today = getBeijingDate();
         const record = ACCESS_MAP[today];
 
-        // 重置错误状态
         errorText.className = 'error-msg';
         input.classList.remove('input-error');
 
@@ -302,6 +298,7 @@
         if (val === record.code) {
           // ✅ 验证成功
           setVerified();
+          isVerified = true; // ← 内存标记立即生效，拦截器随即放行
           hideModal();
           input.value = '';
           triggerDataLoad();
@@ -319,7 +316,6 @@
       input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') verifyBtn.click();
       });
-      // 输入时清除错误状态
       input.addEventListener('input', function () {
         errorText.className = 'error-msg';
         input.classList.remove('input-error');
@@ -328,21 +324,24 @@
   }
 
   // ═══════════════════════════════════════════
-  // 6. 初始化
+  // 7. 初始化
   // ═══════════════════════════════════════════
   function init() {
     updateAccessInfo();
     bindEvents();
 
     if (checkVerified()) {
-      hideModal();
+      // 今日已验证：标记 + 直接加载
+      isVerified = true;
       triggerDataLoad();
     } else {
-      showModal();
+      // 今日未验证：注册全局点击拦截（捕获阶段，确保最先执行）
+      document.addEventListener('click', globalClickInterceptor, true);
+      // 同时触发数据加载，让用户能看到内容
+      triggerDataLoad();
     }
   }
 
-  // 确保 DOM 就绪后初始化
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
