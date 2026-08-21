@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime, date
 
 # ====== 配置区 ======
-EXCEL_FILE = "0.鸭梨资源.xlsx"
+EXCEL_FILE = "韩小说329部.xlsx"
 OUTPUT_JSON = "data/resources.json"
 SHEET_NAME = 0
 # ====================
@@ -16,7 +16,7 @@ FIELD_ALIASES = {
     "date": ["日期", "时间", "date", "添加日期", "更新日期"],  # ← 新增
 }
 
-LINK_COLUMNS = ["百度", "夸克", "UC", "迅雷", "阿里", "115", "天翼", "移动云盘", "移动"]  # ← 加了"移动"
+LINK_COLUMNS = ["百度", "夸克", "UC", "迅雷", "阿里", "115", "天翼", "移动云盘", "移动","城通"]  # ← 加了"移动"
 
 
 def parse_categories(raw: str) -> list[str]:

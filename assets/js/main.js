@@ -4,7 +4,7 @@ window.loadData = async function loadData() { /* 原函数体 */ };
 // === 配置常量 ===
 const STOP_WORDS = ['小说', '漫画'];
 const NET_DISK_FIELDS = ['kk', 'bd', 'uc', 'xl', 'yd', 'lz'];
-const CODE_FIELDS = ['kkm', 'bdm', 'ucm', 'xlm', 'ydm'];
+const CODE_FIELDS = ['kkm', 'bdm', 'ucm', 'xlm', 'ydm','lzm'];
 const NET_DISK_NAMES = {
   'kk': '夸克', 'bd': '百度', 'uc': 'UC',
   'xl': '迅雷', 'yd': '移动', 'lz': '蓝奏'
